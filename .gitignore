@@ -1,47 +1,10 @@
-# Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[cod]
-*$py.class
-
-# Virtual environment directory (replace with your environment's name if different)
-stemenv/
-
-# VS Code configuration files
-.vscode/
-
-# PyCharm configuration files
-.idea/
-
-# Log files
-*.log
-
-# Cache files
-*.cache
-
-# Jupyter Notebook checkpoints
-.ipynb_checkpoints
-
-# Environment variable files
+*.pyc
+*.pyo
 .env
-.env.local
-
-# macOS files
+venv/
+stemenv/
 .DS_Store
-
-# Python egg files
 *.egg-info/
-.eggs/
-
-# Test reports
-coverage.xml
-*.cover
-.hypothesis/
 .pytest_cache/
-htmlcov/
-
-# MyPy type checker reports
-.mypy_cache/
-
-# Flask specific files
-instance/
-*.sqlite3
+.idea/
