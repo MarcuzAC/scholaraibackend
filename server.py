@@ -8,8 +8,13 @@ app = Flask(__name__)
 CORS(app)
 
 # Load the pre-trained model
-model = joblib.load('stem_model.pkl')
+model_path = 'stem_model.pkl'
+if os.path.exists(model_path):
+    model = joblib.load(model_path)
+else:
+    model = None  # Handle the case where the model might not be found
 
+# Function to generate study recommendations
 def generate_recommendations(input_data):
     recommendations = []
     
@@ -27,6 +32,12 @@ def generate_recommendations(input_data):
         recommendations.append("Great job! Keep up the good work.")
     return recommendations
 
+# Route to handle root requests to reduce 404 errors
+@app.route('/')
+def index():
+    return jsonify({'status': 'Application is running'})
+
+# Prediction route
 @app.route('/predict', methods=['POST'])
 def predict():
     # Check if the model is loaded correctly
