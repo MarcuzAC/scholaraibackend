@@ -2,11 +2,12 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import joblib
 import numpy as np
+import os
 
 app = Flask(__name__)
 CORS(app)
 
-# Load your pre-trained model
+# Load the pre-trained model
 model = joblib.load('stem_model.pkl')
 
 def generate_recommendations(input_data):
@@ -34,7 +35,7 @@ def predict():
 
     # Get data from the request
     input_data = request.get_json(force=True)
-    print("Received input data:", input_data)  
+    print("Received input data:", input_data)  # Debugging line
 
     # Prepare input for the model and calculate average score
     try:
@@ -102,4 +103,6 @@ def predict():
     })
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Use the PORT environment variable provided by Vercel
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=True, host="0.0.0.0", port=port)
