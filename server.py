@@ -3,16 +3,35 @@ from flask_cors import CORS
 import joblib
 import numpy as np
 import os
+from pymongo import MongoClient
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+MONGODB_URI = os.getenv("MongoDB_URI")
 
 app = Flask(__name__)
 CORS(app)
+
+# MongoDB configuration
+client = MongoClient(MONGODB_URI)
+db = client['scholarai']
+collection = db['predictions']
+
+# Check MongoDB connection
+try:
+    db.list_collection_names() 
+    print("Successfully connected to MongoDB.")
+except Exception as e:
+    print("MongoDB connection failed:", e)
 
 # Load the pre-trained model
 model_path = 'stem_model.pkl'
 if os.path.exists(model_path):
     model = joblib.load(model_path)
 else:
-    model = None  # Handle the case where the model might not be found
+    model = None
 
 # Function to generate study recommendations
 def generate_recommendations(input_data):
@@ -40,22 +59,18 @@ def index():
 # Prediction route
 @app.route('/predict', methods=['POST'])
 def predict():
-    # Check if the model is loaded correctly
     if model is None:
         return jsonify({'error': 'Model not loaded properly'}), 500
 
-    # Get data from the request
     input_data = request.get_json(force=True)
-    print("Received input data:", input_data)  # Debugging line
+    print("Received input data:", input_data)
 
-    # Prepare input for the model and calculate average score
     try:
         math_score = int(input_data['mathscore'])
         physics_score = int(input_data['physicsscore'])
         chem_score = int(input_data['chemscore'])
         average = (math_score + physics_score + chem_score) // 3
 
-        # Define the mappings
         edu_mapping = {
             "College": 1,
             "Secondary School": 2,
@@ -74,7 +89,6 @@ def predict():
             "Female": 1
         }
 
-        # Prepare features with encoded values
         features = [
             gender_mapping.get(input_data['gender'], 0),           
             edu_mapping.get(input_data['parentedu'], 3),           
@@ -91,22 +105,24 @@ def predict():
         print("Error in input data:", e)
         return jsonify({'error': 'Invalid input data', 'details': str(e)}), 400
 
-    # Make a prediction
     try:
-        # Reshape the features to match the model input requirements
-        model_input = np.array([features])  # Convert list to numpy array
+        model_input = np.array([features])
         prediction = model.predict(model_input)
-
-        # Method 1: Get the class with the highest probability
         predicted_class = int(np.argmax(prediction[0]))
-
-        print("Prediction result:", prediction)  # Debugging line
+        print("Prediction result:", prediction)
     except Exception as e:
         print("Prediction error:", e)
         return jsonify({'error': 'Prediction failed', 'details': str(e)}), 500
 
-    # Generate recommendations based on input data
     recommendations = generate_recommendations(input_data)
+
+    # Insert the prediction result and input data into MongoDB
+    record = {
+        'input_data': input_data,
+        'prediction': predicted_class,
+        'recommendations': recommendations
+    }
+    collection.insert_one(record)  # Save the data in MongoDB
 
     return jsonify({
         'prediction': predicted_class,
@@ -114,6 +130,5 @@ def predict():
     })
 
 if __name__ == '__main__':
-    # Use the PORT environment variable provided by Render
     port = int(os.environ.get("PORT", 5000))
     app.run(debug=True, host="0.0.0.0", port=port)
